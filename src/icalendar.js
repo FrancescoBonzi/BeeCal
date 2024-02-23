@@ -44,7 +44,7 @@ export class iCalendar {
     }
 
     escape(t) {
-        return t.replace(/\\/g, "\\\\").replace(/;/g, "\\,").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/"/g, "\\'");
+        return t.replace(/\\/g, "\\\\").replace(/;/g, "\\,").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/"/g, "\\\"");
     }
 
     wrapLine(l, o, e) {
@@ -70,12 +70,10 @@ export class iCalendar {
         event = event + "SEQUENCE:0\r\n";
         event = event + "DTSTART:" + this.dt(e.start) + "\r\n";
         event = event + "SUMMARY:" + this.wrapLine(e.title, 8);
-        if(e.url !== null) {
+        if (e.url !== null) {
             event = event + "\r\nURL:" + this.wrapLine(e.url, 5, false).replace("\\:", ":");
         }
-        if(e.location !== null) {
-            event = event + "\r\nLOCATION:" + this.wrapLine(e.location, 11);
-        }
+        event = event + "\r\nLOCATION:" + this.wrapLine(e.location, 11);
         event = event + "\r\nDTEND:" + this.dt(e.end);
         if (this.secsAlarm !== null) {
             event = event + "\r\nBEGIN:VALARM\r\nTRIGGER:";

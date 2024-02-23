@@ -3,8 +3,10 @@ import "express-handlebars"
 import * as hbs from "express-handlebars"
 import sqlite3 from "sqlite3"
 import { router } from "./controller.js"
-import { checkForOpendataUpdates } from "./update_opendata.js"
 import { __dirname } from "./utils.js"
+import * as segfaultHandler from "node-segfault-handler";
+
+segfaultHandler.registerHandler();
 
 var db = new sqlite3.Database("./logs/data.db");
 var app = express();
@@ -45,9 +47,6 @@ app.use("/", router);
 app.engine("handlebars", hbs.engine());
 app.set("view engine", "handlebars");
 
-// Update opendata on launch
-checkForOpendataUpdates();
-
 /**
  * Create DB tables and migrate CSV
  */
@@ -60,5 +59,5 @@ db.close()
 
 //start server
 app.listen(app.get("port"), app.get("bind-addr"), () => {
-    console.log(`UniboClendar started on http://${app.get("bind-addr")}:${app.get("port")}`);
+    console.log(`BeeCal started on http://${app.get("bind-addr")}:${app.get("port")}`);
 });

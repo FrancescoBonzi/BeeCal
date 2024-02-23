@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as model from "./model.js";
+import * as tecla from "./tecla.js";
 
 function bonk(req, res, next) {
     res.writeHead(302, {
@@ -20,22 +21,20 @@ function error500(err, req, res, next) {
 }
 
 async function home_page(req, res, next) {
-    let areas = await model.getAreas();
-    res.render("home", { "page": "home", "areas": areas });
+    let unis = await tecla.Tecla.getLearningInstitutions();
+    res.render("home", { "page": "home", "unis": unis });
 }
 
 async function course_page(req, res, next) {
-    const unibo_url = req.body.courses;
-    const year = req.body.years;
-    const curriculum = req.body.curricula;
-    let list = await model.getTimetable(unibo_url, year, curriculum);
+    const uni = req.body.uni;
+    const year = req.body.year;
+    const curriculum = req.body.curriculum;
+    let list = await model.getTimetable(uni, curriculum, year);
     res.render("course", { "page": "course", "list": list });
 }
 
 async function get_calendar_url(req, res, next) {
-    const timetable_url = req.body.timetable_url;
-    const type = timetable_url.split("/")[3];
-    const course = timetable_url.split("/")[4];
+    const universityId = req.body.universityId;
     const year = req.body.year;
     const curriculum = req.body.curriculum;
     var lectures = req.body.lectures;
@@ -44,7 +43,7 @@ async function get_calendar_url(req, res, next) {
     } else if (typeof lectures === "string") {
         lectures = [lectures];
     }
-    let url = model.generateUrl(type, course, year, curriculum, lectures);
+    let url = model.generateUrl(universityId, curriculum, year, lectures);
     res.render("link", { "page": "link", "url": url });
 }
 
@@ -56,18 +55,39 @@ async function get_ical(req, res, next) {
     res.send(unibo_cal);
 }
 
+async function get_areas_given_uni(req, res, next) {
+    var uni = req.query.uni;
+    res.type("application/json");
+    try {
+        let areas = await tecla.Tecla.getUniversityById(uni).getAreas();
+        res.send(areas);
+    } catch (_) {
+        res.send([]);
+    }
+}
+
 async function get_courses_given_area(req, res, next) {
     var area = req.query.area;
-    let courses = await model.getCoursesGivenArea(area);
+    var uni = req.query.uni;
     res.type("application/json");
-    res.send(courses);
+    try {
+        let courses = await tecla.Tecla.getUniversityById(uni).getCoursesWithArea(area);
+        res.send(courses);
+    } catch (_) {
+        res.send([]);
+    }
 }
 
 async function get_curricula_given_course(req, res, next) {
-    var url = req.body.url;
-    let curricula = await model.getCurriculaGivenCourseUrl(url);
-    res.type("application/json");
-    res.send(JSON.stringify(curricula));
+    var course = req.body.course;
+    var uni = req.body.uni;
+    try {
+        let curricula = await tecla.Tecla.getUniversityById(uni).getCurriculaForCourse(course);
+        res.send(curricula);
+    } catch (e) {
+        console.error(e);
+        res.send([]);
+    }
 }
 
 export const router = (() => {
@@ -76,6 +96,7 @@ export const router = (() => {
     r.post("/course", course_page);
     r.post("/get_calendar_url", get_calendar_url);
     r.get("/get_ical", get_ical);
+    r.get("/get_areas_given_uni", get_areas_given_uni);
     r.get("/get_courses_given_area", get_courses_given_area);
     r.post("/get_curricula_given_course", get_curricula_given_course);
     r.get("/bonk", bonk);

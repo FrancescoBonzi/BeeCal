@@ -6,6 +6,7 @@ import { iCalendar } from "./icalendar.js";
 import sqlite3 from "sqlite3";
 import rb from "randombytes";
 import b32 from "base32.js";
+import { Tecla } from "./tecla.js";
 
 const LANGUAGE = {
     "magistralecu": "orario-lezioni",
@@ -16,7 +17,6 @@ const LANGUAGE = {
     "2cycle": "timetable"
 }
 const ONE_UNIX_DAY = 24 * 3600;
-const DATA_FILE = "./opendata/corsi.csv";
 const DB_FILE = "./logs/data.db";
 
 // Create a single instance of the database connection
@@ -89,121 +89,22 @@ export function log_enrollment(params, lectures) {
     });
 }
 
-export function getAreas() {
-    //Reading csv file and building an array of unique values
-    var results = [];
-    return new Promise((res, rej) => {
-        fs.createReadStream(DATA_FILE)
-            .pipe(csv())
-            .on("data", (data) => {
-                if (data.ambiti != "") {
-                    results.push(data)
-                }
-            })
-            .on("end", () => {
-                var areas = results.map(
-                    function ({ ambiti }) {
-                        return ambiti;
-                    }
-                );
-                areas = Array.from(new Set(areas)).sort();
-                res(areas);
-            });
-    });
-}
+export async function getTimetable(universityId, curriculum, year) {
+    let university = Tecla.getUniversityById(universityId);
+    return university.getTeachingsForCurriculum(curriculum, year)
+        .then(function (teachings) {
 
-export function getCoursesGivenArea(area) {
-    var results = [];
-    return new Promise((res, rej) => {
-        fs.createReadStream(DATA_FILE)
-            .pipe(csv())
-            .on("data", (data) => results.push(data))
-            .on("end", () => {
-                let courses = []
-                for (let i = 0; i < results.length; i++) {
-                    if (results[i].ambiti === area) {
-                        var course = new Object();
-                        course.code = results[i].corso_codice;
-                        course.description = results[i].corso_descrizione;
-                        course.url = results[i].url;
-                        course.duration = results[i].durata;
-                        course.type = results[i].tipologia;
-                        courses.push(course);
-                    }
-                }
-                res(courses);
-            });
-    });
-}
-
-// Finding "SITO DEL CORSO" from https://www.unibo.it/it/didattica/corsi-di-studio/corso/[year]/[code]
-export async function getTimetableUrlGivenUniboUrl(unibo_url, callback) {
-    console.log(unibo_url);
-    return await fetch(unibo_url).then(x => x.text())
-        .then(function (html) {
-            var $ = cheerio.load(html);
-            var timetable_url = $(".social-contact ul li ul li p a").first().attr("href");
-            return timetable_url;
-        })
-        .catch(function (err) {
-            console.log(err);
-            return undefined;
-        });
-}
-
-export async function getCurriculaGivenCourseUrl(unibo_url) {
-    let timetable_url = await getTimetableUrlGivenUniboUrl(unibo_url);
-    const json_err = [{
-        "selected": false,
-        "value": undefined,
-        "label": "NON SONO PRESENTI CURRICULA"
-    }];
-    if (timetable_url === undefined) {
-        return json_err;
-    }
-    var type = timetable_url.split("/")[3];
-    var curricula_url = timetable_url + "/" + LANGUAGE[type] + "/@@available_curricula";
-    console.log(curricula_url);
-    // ex. https://corsi.unibo.it/laurea/clei/orario-lezioni/@@available_curricula
-    return await fetch(curricula_url).then(x => x.json())
-        .catch(function (err) {
-            console.log(err);
-            return json_err;
-        });
-}
-
-export async function getTimetable(unibo_url, year, curriculum) {
-    let timetable_url = await getTimetableUrlGivenUniboUrl(unibo_url);
-    var type = timetable_url.split("/")[3];
-    var link = timetable_url + "/" + LANGUAGE[type] + "?anno=" + year + "&curricula=" + curriculum;
-    return fetch(link).then(x => x.text())
-        .then(function (html) {
-            var $ = cheerio.load(html);
-            var inputs = [];
-            $("#insegnamenti-popup ul li input").each(function (_index, element) {
-                inputs.push($(element).attr("value"));
-            });
-            var labels = [];
-            $("#insegnamenti-popup ul li label").each(function (_index, element) {
-                labels.push($(element).text());
-            });
             let lectures_form = '<button class="btn btn-secondary" id="select_or_deselect_all" onclick="return selectOrDeselectAll();">Deseleziona tutti</button>';
             lectures_form += '<div class="container">';
             lectures_form += '<form id="select_lectures" action="/get_calendar_url" method="post"><div class="row"><table>';
-            for (let i = 0; i < inputs.length; i++)
-                lectures_form += '<tr><th><input type="checkbox" class="checkbox" name="lectures" value="' + inputs[i] + '" id="' + inputs[i] + '" checked/></th><th><label for="' + inputs[i] + '">' + labels[i] + '</label></th></tr>';
-            lectures_form += '</table></div><input type="hidden" name="timetable_url" value="' + timetable_url + '"/>';
+            for (let i = 0; i < teachings.length; i++) {
+                lectures_form += '<tr><th><input type="checkbox" class="checkbox" name="lectures" value="' + teachings[i].id + '" id="' + teachings[i].id + '" checked/></th><th><label for="' + teachings[i].id + '">' + teachings[i].name + '</label></th></tr>';
+            }
+            lectures_form += '</table></div><input type="hidden" name="universityId" value="' + universityId + '"/>';
             lectures_form += '<input type="hidden" name="year" value="' + year + '"/>';
             lectures_form += '<input type="hidden" name="curriculum" value="' + curriculum + '"/>';
             lectures_form += '</div>';
             lectures_form += '<input type="submit" class="btn btn-primary" value="Ottieni Calendario"/></form>';
-            /*
-            fs.writeFile("./labels.html", labels, function (err) {
-                if (err)
-                    return console.log(err);
-                console.log("labels saved!");
-            });
-            */
             return lectures_form
         })
         .catch(function (err) {
@@ -212,7 +113,7 @@ export async function getTimetable(unibo_url, year, curriculum) {
         });
 };
 
-export function generateUrl(type, course, year, curriculum, lectures) {
+export function generateUrl(universityId, curriculum, year, lectures) {
 
     //Creating URL to get the calendar
     const id = generateId()
@@ -220,7 +121,7 @@ export function generateUrl(type, course, year, curriculum, lectures) {
     var url = "webcal://unibocalendar.it/get_ical?id=" + id
 
     // Writing logs
-    var params = [id, new Date().getTime(), type, course, year, curriculum];
+    var params = [id, new Date().getTime(), universityId, "course", year, curriculum];
     log_enrollment(params, lectures);
     return url;
 }
@@ -246,7 +147,7 @@ export async function getICalendarEvents(id, ua, alert) {
             const start = new Date();
             const day = 864e5;
             const end = new Date(+start + day / 24);
-            const ask_for_update_event = new UniboEventClass("Aggiorna UniboCalendar!", start, end, "unknown", "https://unibocalendar.it", "");
+            const ask_for_update_event = new UniboEventClass("Aggiorna BeeCal!", start, end, "unknown", "https://unibocalendar.it", "");
             var factory = new iCalendar(alert);
             return factory.ical([ask_for_update_event]);
         } else {
@@ -271,48 +172,27 @@ export async function getICalendarEvents(id, ua, alert) {
                     })
                 );
                 let enrollments_info = await enrollment_promise;
-                let type = enrollments_info["type"];
+                let university = enrollments_info["type"];
                 let course = enrollments_info["course"];
                 let year = enrollments_info["year"];
                 let curriculum = enrollments_info["curriculum"];
-                var root = "https://corsi.unibo.it";
-                var link = [root, type, course, LANGUAGE[type], '@@orario_reale_json?anno=' + year].join("/");
 
-                if (curriculum !== undefined) {
-                    link += "&curricula=" + curriculum;
-                }
+                let tecla = Tecla.getUniversityById(university);
 
                 let query_lectures = "SELECT lecture_id FROM requested_lectures WHERE enrollment_id = ?";
                 let lectures = await new Promise((res, rej) => db.all(query_lectures, id, (e, lectures) => { res(lectures) }));
 
-                for (var i = 0; i < lectures.length; i++) {
-                    link += "&insegnamenti=" + lectures[i]["lecture_id"];
-                }
-
-                link += "&calendar_view=";
-
-                let json = await fetch(link).then(x => x.json()).catch(function (err) {
-                    console.error(err);
-                    return "An error occurred while creating the calendar.";
-                });
+                let timetable = await tecla.getTimetableWithTeaching(curriculum, lectures.map((x) => x["lecture_id"]), year)
 
                 let calendar = [];
-                for (var l of json) {
+                console.log(timetable);
+                for (var l of timetable) {
                     const start = new Date(l.start);
                     const end = new Date(l.end);
-                    var location = null;
-                    if (l.aule && Array.isArray(l.aule) && l.aule.length > 0) {
-                        location = l.aule[0].des_risorsa + ", " + l.aule[0].des_indirizzo;
-                    }
-                    var url = null;
-                    if (!(l.teams === undefined) && !(l.teams === null)) {
-                        url = encodeURI(l.teams);
-                    }
-                    var prof = null;
-                    if (!(l.docente === undefined) && !(l.docente === null)) {
-                        prof = l.docente;
-                    }
-                    const event = new UniboEventClass(l.title, start, end, location, url, prof);
+                    var location = l.venue;
+                    var url = l.online_class_url || null;
+                    var prof = l.teacher;
+                    const event = new UniboEventClass(l.teaching.name, start, end, location, url, prof);
                     calendar.push(event);
                 }
 
