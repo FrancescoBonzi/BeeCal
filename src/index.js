@@ -3,7 +3,6 @@ import "express-handlebars"
 import * as hbs from "express-handlebars"
 import sqlite3 from "sqlite3"
 import { router } from "./controller.js"
-import { checkForOpendataUpdates } from "./update_opendata.js"
 import { __dirname } from "./utils.js"
 import * as segfaultHandler from "node-segfault-handler";
 
@@ -47,9 +46,6 @@ app.use("/", router);
 //set up handlebars
 app.engine("handlebars", hbs.engine());
 app.set("view engine", "handlebars");
-
-// Update opendata on launch
-checkForOpendataUpdates();
 
 /**
  * Create DB tables and migrate CSV

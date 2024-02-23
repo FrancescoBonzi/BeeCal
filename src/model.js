@@ -17,7 +17,6 @@ const LANGUAGE = {
     "2cycle": "timetable"
 }
 const ONE_UNIX_DAY = 24 * 3600;
-const DATA_FILE = "./opendata/corsi.csv";
 const DB_FILE = "./logs/data.db";
 
 // Create a single instance of the database connection
@@ -84,87 +83,6 @@ export function log_enrollment(params, lectures) {
             }
         });
     });
-}
-
-export function getAreas() {
-    //Reading csv file and building an array of unique values
-    var results = [];
-    return new Promise((res, rej) => {
-        fs.createReadStream(DATA_FILE)
-            .pipe(csv())
-            .on("data", (data) => {
-                if (data.ambiti != "") {
-                    results.push(data)
-                }
-            })
-            .on("end", () => {
-                var areas = results.map(
-                    function ({ ambiti }) {
-                        return ambiti;
-                    }
-                );
-                areas = Array.from(new Set(areas)).sort();
-                res(areas);
-            });
-    });
-}
-
-export function getCoursesGivenArea(area) {
-    var results = [];
-    return new Promise((res, rej) => {
-        fs.createReadStream(DATA_FILE)
-            .pipe(csv())
-            .on("data", (data) => results.push(data))
-            .on("end", () => {
-                let courses = []
-                for (let i = 0; i < results.length; i++) {
-                    if (results[i].ambiti === area) {
-                        var course = new Object();
-                        course.code = results[i].corso_codice;
-                        course.description = results[i].corso_descrizione;
-                        course.url = results[i].url;
-                        course.duration = results[i].durata;
-                        course.type = results[i].tipologia;
-                        courses.push(course);
-                    }
-                }
-                res(courses);
-            });
-    });
-}
-
-// Finding "SITO DEL CORSO" from https://www.unibo.it/it/didattica/corsi-di-studio/corso/[year]/[code]
-export async function getTimetableUrlGivenUniboUrl(unibo_url, callback) {
-    return await fetch(unibo_url).then(x => x.text())
-        .then(function (html) {
-            var $ = cheerio.load(html);
-            var timetable_url = $("#u-content-preforemost .globe span a").first().attr("href");
-            return timetable_url;
-        })
-        .catch(function (err) {
-            console.log(err);
-            return undefined;
-        });
-}
-
-export async function getCurriculaGivenCourseUrl(unibo_url) {
-    let timetable_url = await getTimetableUrlGivenUniboUrl(unibo_url);
-    const json_err = [{
-        "selected": false,
-        "value": undefined,
-        "label": "NON SONO PRESENTI CURRICULA"
-    }];
-    if (timetable_url === undefined) {
-        return json_err;
-    }
-    var type = timetable_url.split("/")[3];
-    var curricula_url = timetable_url + "/" + LANGUAGE[type] + "/@@available_curricula";
-    // ex. https://corsi.unibo.it/laurea/clei/orario-lezioni/@@available_curricula
-    return await fetch(curricula_url).then(x => x.json())
-        .catch(function (err) {
-            console.log(err);
-            return json_err;
-        });
 }
 
 export async function getTimetable(universityId, curriculum, year) {
