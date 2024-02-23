@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:18-alpine
 
 ENV BIND_ADDR=0.0.0.0
 ENV PORT=3000
