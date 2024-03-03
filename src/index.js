@@ -4,9 +4,9 @@ import * as hbs from "express-handlebars"
 import sqlite3 from "sqlite3"
 import { router } from "./controller.js"
 import { __dirname } from "./utils.js"
-import * as segfaultHandler from "node-segfault-handler";
+//import * as segfaultHandler from "node-segfault-handler";
 
-segfaultHandler.registerHandler();
+//segfaultHandler.registerHandler();
 
 var db = new sqlite3.Database("./logs/data.db");
 var app = express();

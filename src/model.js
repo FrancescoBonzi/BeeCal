@@ -33,7 +33,7 @@ class UniboEventClass {
         this.location = location;
         this.url = url;
         if(docente !== null) {
-            this.organizer = { name: docente, email: docente.toLowerCase().replace(/\s/g, ".") + "@unibo.it" };
+            this.organizer = docente;
         } else {
             this.organizer = null
         }
@@ -113,12 +113,13 @@ export async function getTimetable(universityId, curriculum, year) {
         });
 };
 
-export function generateUrl(universityId, curriculum, year, lectures) {
+export function generateUrl(origin, universityId, curriculum, year, lectures) {
 
+    let domain = origin.replace(/https?:\/\//, "");
     //Creating URL to get the calendar
     const id = generateId()
     //unibocalendar.duckdns.org
-    var url = "webcal://unibocalendar.it/get_ical?id=" + id
+    var url = `webcal://${domain}/get_ical?id=${id}`
 
     // Writing logs
     var params = [id, new Date().getTime(), universityId, "course", year, curriculum];
