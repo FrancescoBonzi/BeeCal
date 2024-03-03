@@ -43,7 +43,7 @@ async function get_calendar_url(req, res, next) {
     } else if (typeof lectures === "string") {
         lectures = [lectures];
     }
-    let url = model.generateUrl(universityId, curriculum, year, lectures);
+    let url = model.generateUrl(req.header("origin"), universityId, curriculum, year, lectures);
     res.render("link", { "page": "link", "url": url });
 }
 
