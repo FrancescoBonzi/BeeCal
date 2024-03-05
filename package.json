@@ -13,7 +13,7 @@
     "express-handlebars": "^6.0.0",
     "node-fetch": "^3.0.0",
     "randombytes": "^2.1.0",
-    "sqlite3": "^5.1.6"
+    "sqlite3": "^5.1.7"
   },
   "repository": {
     "type": "git",
