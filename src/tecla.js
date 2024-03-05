@@ -39,13 +39,13 @@ export class TeclaUniversity {
         return await fetch(this.url + "/areas").then(r => r.json());
     }
     async getCoursesWithArea(areaId) {
-        return await fetch(this.url + "/areas/" + areaId + "/courses").then(r => r.json());
+        return await fetch(this.url + "/areas/" + encodeURIComponent(areaId) + "/courses").then(r => r.json());
     }
     async getCurriculaForCourse(courseId) {
-        return await fetch(this.url + "/courses/" + courseId + "/curricula").then(r => r.json());
+        return await fetch(this.url + "/courses/" + encodeURIComponent(courseId) + "/curricula").then(r => r.json());
     }
     async getTeachingsForCurriculum(curriculumId, year) {
-        return await fetch(this.url + "/curricula/" + curriculumId + "/teachings/" + year.toString()).then(r => r.json());
+        return await fetch(this.url + "/curricula/" + encodeURIComponent(curriculumId) + "/teachings/" + year.toString()).then(r => r.json());
     }
     async getTimetableWithTeaching(curriculumId, teachings, year) {
         let qryStr = "?";
@@ -53,7 +53,7 @@ export class TeclaUniversity {
             qryStr = qryStr + "teachings=" + encodeURIComponent(teachings[i]) + "&";
         }
         qryStr = qryStr.slice(0, -1)
-        return await fetch(this.url + "/curricula/" + curriculumId + "/timetables/" + year.toString() + qryStr).then(r => r.json());
+        return await fetch(this.url + "/curricula/" + encodeURIComponent(curriculumId) + "/timetables/" + year.toString() + qryStr).then(r => r.json());
     }
 }
 

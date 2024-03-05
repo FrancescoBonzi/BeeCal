@@ -9,13 +9,11 @@
   },
   "dependencies": {
     "base32.js": "^0.1.0",
-    "cheerio": "^1.0.0-rc.10",
-    "csv-parser": "^2.3.5",
     "express": "^4.17.1",
     "express-handlebars": "^6.0.0",
     "node-fetch": "^3.0.0",
     "randombytes": "^2.1.0",
-    "sqlite3": "^5.1.6"
+    "sqlite3": "^5.1.7"
   },
   "repository": {
     "type": "git",

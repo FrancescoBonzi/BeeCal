@@ -4,6 +4,28 @@
         <h6>Seleziona solo i corsi che intendi inserire nel tuo calendario</h6>
     </div>
     <div class="mt-3" id="box">
-        {{{list}}}
+        {{#if list.teachings}}
+        <button class="btn btn-secondary" id="select_or_deselect_all"
+            onclick="return selectOrDeselectAll();">Deseleziona tutti</button>
+        <div class="container">
+            <form id="select_lectures" action="/get_calendar_url" method="post">
+                <div class="row">
+                    {{#each list.teachings}}
+                    <div class="form-check my-2">
+                        <input type="checkbox" class="form-check-input" name="lectures" value="{{{this.id}}}"
+                            id="{{{this.id}}}" checked />
+                        <label class="form-check-label" for="{{{this.id}}}">{{{this.name}}}</label>
+                    </div>
+                    {{/each}}
+                </div>
+                <input type="hidden" name="universityId" value="{{{uni}}}" />
+                <input type="hidden" name="year" value="{{{year}}}" />
+                <input type="hidden" name="curriculum" value="{{{curriculum}}}" />
+                <input type="submit" class="btn btn-primary" value="Ottieni Calendario" />
+            </form>
+        </div>
+        {{else}}
+        <h5 style="color: #dc3545;">Errore! L'indirizzo non è valido...</h5>
+        {{/if}}
     </div>
 </div>

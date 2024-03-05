@@ -30,7 +30,13 @@ async function course_page(req, res, next) {
     const year = req.body.year;
     const curriculum = req.body.curriculum;
     let list = await model.getTimetable(uni, curriculum, year);
-    res.render("course", { "page": "course", "list": list });
+    res.render("course", {
+        "page": "course",
+        "list": list,
+        "uni": uni,
+        "year": year,
+        "curriculum": curriculum,
+    });
 }
 
 async function get_calendar_url(req, res, next) {

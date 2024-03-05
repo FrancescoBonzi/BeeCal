@@ -1,21 +1,10 @@
-import * as cheerio from "cheerio";
 import fetch from "node-fetch";
-import csv from "csv-parser";
-import * as fs from "fs";
 import { iCalendar } from "./icalendar.js";
 import sqlite3 from "sqlite3";
 import rb from "randombytes";
 import b32 from "base32.js";
 import { Tecla } from "./tecla.js";
 
-const LANGUAGE = {
-    "magistralecu": "orario-lezioni",
-    "magistrale": "orario-lezioni",
-    "laurea": "orario-lezioni",
-    "singlecycle": "timetable",
-    "1cycle": "timetable",
-    "2cycle": "timetable"
-}
 const ONE_UNIX_DAY = 24 * 3600;
 const DB_FILE = "./logs/data.db";
 
@@ -32,7 +21,7 @@ class UniboEventClass {
         this.end = end;
         this.location = location;
         this.url = url;
-        if(docente !== null) {
+        if (docente !== null) {
             this.organizer = docente;
         } else {
             this.organizer = null
@@ -92,24 +81,10 @@ export function log_enrollment(params, lectures) {
 export async function getTimetable(universityId, curriculum, year) {
     let university = Tecla.getUniversityById(universityId);
     return university.getTeachingsForCurriculum(curriculum, year)
-        .then(function (teachings) {
-
-            let lectures_form = '<button class="btn btn-secondary" id="select_or_deselect_all" onclick="return selectOrDeselectAll();">Deseleziona tutti</button>';
-            lectures_form += '<div class="container">';
-            lectures_form += '<form id="select_lectures" action="/get_calendar_url" method="post"><div class="row"><table>';
-            for (let i = 0; i < teachings.length; i++) {
-                lectures_form += '<tr><th><input type="checkbox" class="checkbox" name="lectures" value="' + teachings[i].id + '" id="' + teachings[i].id + '" checked/></th><th><label for="' + teachings[i].id + '">' + teachings[i].name + '</label></th></tr>';
-            }
-            lectures_form += '</table></div><input type="hidden" name="universityId" value="' + universityId + '"/>';
-            lectures_form += '<input type="hidden" name="year" value="' + year + '"/>';
-            lectures_form += '<input type="hidden" name="curriculum" value="' + curriculum + '"/>';
-            lectures_form += '</div>';
-            lectures_form += '<input type="submit" class="btn btn-primary" value="Ottieni Calendario"/></form>';
-            return lectures_form
-        })
+        .then(x => { return { teachings: x }; })
         .catch(function (err) {
             console.log(err);
-            return '<h5 style="color: #dc3545;">Errore! L\'indirizzo non è valido...</h5>';
+            return {};
         });
 };
 
