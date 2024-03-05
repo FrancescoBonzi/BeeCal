@@ -1,21 +1,10 @@
-import * as cheerio from "cheerio";
 import fetch from "node-fetch";
-import csv from "csv-parser";
-import * as fs from "fs";
 import { iCalendar } from "./icalendar.js";
 import sqlite3 from "sqlite3";
 import rb from "randombytes";
 import b32 from "base32.js";
 import { Tecla } from "./tecla.js";
 
-const LANGUAGE = {
-    "magistralecu": "orario-lezioni",
-    "magistrale": "orario-lezioni",
-    "laurea": "orario-lezioni",
-    "singlecycle": "timetable",
-    "1cycle": "timetable",
-    "2cycle": "timetable"
-}
 const ONE_UNIX_DAY = 24 * 3600;
 const DB_FILE = "./logs/data.db";
 
@@ -32,7 +21,7 @@ class UniboEventClass {
         this.end = end;
         this.location = location;
         this.url = url;
-        if(docente !== null) {
+        if (docente !== null) {
             this.organizer = docente;
         } else {
             this.organizer = null
